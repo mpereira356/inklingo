@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Login - Inklingo{% endblock %}
+{% block content %}
+<div class="mx-auto mt-12 max-w-md rounded-2xl bg-white p-10 shadow-lg">
+    <h2 class="mb-3 text-center text-3xl font-bold text-gray-800">Bem-vindo de volta</h2>
+    <p class="mb-8 text-center text-sm leading-6 text-gray-500">Entre com seu login de usuário. O e-mail não é mais necessário para acessar.</p>
+    <form method="POST">
+        <div class="mb-6">
+            <label class="mb-2 block font-semibold text-gray-700">Login</label>
+            <input type="text" name="username" class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="seu_login" required>
+        </div>
+        <div class="mb-8">
+            <label class="mb-2 block font-semibold text-gray-700">Senha</label>
+            <input type="password" name="password" class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Sua senha" required>
+        </div>
+        <button type="submit" class="w-full rounded-lg bg-indigo-600 py-3 font-bold text-white shadow-md transition hover:scale-[1.02] hover:bg-indigo-700">
+            Entrar
+        </button>
+    </form>
+    <p class="mt-8 text-center text-gray-600">
+        Não tem uma conta? <a href="{{ url_for('register') }}" class="font-bold text-indigo-600 hover:underline">Cadastre-se</a>
+    </p>
+</div>
+{% endblock %}

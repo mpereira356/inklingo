@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Inklingo{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Coluna Esquerda: Livros -->
+    <div class="lg:col-span-2 space-y-8">
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Meus Livros</h2>
+                <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="bg-indigo-600 text-white px-5 py-2 rounded-xl hover:bg-indigo-700 transition flex items-center font-semibold">
+                    <span class="mr-2">+</span> Novo Livro
+                </button>
+            </div>
+            
+            {% if books %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for book in books %}
+                        <div class="border border-gray-100 p-5 rounded-2xl hover:shadow-md transition bg-gray-50 group">
+                            <h3 class="font-bold text-lg text-gray-800 mb-2 truncate">{{ book.title }}</h3>
+                            <p class="text-sm text-gray-500 mb-4">Adicionado em {{ book.upload_date.strftime('%d/%m/%Y') }}</p>
+                            <a href="{{ url_for('reader', book_id=book.id) }}" class="inline-block bg-white text-indigo-600 border border-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-600 hover:text-white transition font-medium">
+                                Continuar Lendo
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                    <p class="text-gray-500 mb-4 text-lg">Você ainda não enviou nenhum livro.</p>
+                    <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="text-indigo-600 font-bold hover:underline text-lg">Clique aqui para começar</button>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if last_book %}
+        <div class="bg-indigo-600 p-8 rounded-2xl shadow-lg text-white relative overflow-hidden">
+            <div class="relative z-10">
+                <h3 class="text-indigo-100 uppercase tracking-wider text-sm font-bold mb-2">Continue de onde parou</h3>
+                <h2 class="text-3xl font-bold mb-4">{{ last_book.title }}</h2>
+                <p class="mb-6 opacity-90">Você está na página {{ last_progress.last_page }}. Mantenha o ritmo!</p>
+                <a href="{{ url_for('reader', book_id=last_book.id, page=last_progress.last_page) }}" class="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition inline-block">
+                    Abrir Livro
+                </a>
+            </div>
+            <div class="absolute -right-10 -bottom-10 text-9xl opacity-10 transform -rotate-12">📖</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Coluna Direita: Vocabulário e Estatísticas -->
+    <div class="space-y-8">
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">Palavras de Hoje</h2>
+            {% if daily_words %}
+                <ul class="space-y-4">
+                    {% for vocab in daily_words %}
+                        <li class="flex justify-between items-center p-3 hover:bg-gray-50 rounded-xl transition border-b border-gray-50 last:border-0">
+                            <div>
+                                <span class="font-bold text-indigo-600 text-lg">{{ vocab.word }}</span>
+                                <span class="text-gray-400 mx-2">→</span>
+                                <span class="text-gray-600">{{ vocab.translation }}</span>
+                            </div>
+                            <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-full font-bold">Salva</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="mt-6 pt-4 border-t border-gray-100 text-center">
+                    <p class="text-sm text-gray-500 font-medium">Total de palavras: <span class="text-indigo-600 font-bold">{{ vocab_count }}</span></p>
+                </div>
+            {% else %}
+                <p class="text-gray-500 text-center py-6 italic">Nenhuma palavra salva hoje.</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">Seu Progresso</h2>
+            <div class="space-y-6">
+                <div>
+                    <div class="flex justify-between text-sm font-bold mb-2">
+                        <span class="text-gray-600">Meta Diária (10 palavras)</span>
+                        <span class="text-indigo-600">{{ daily_words|length }}/10</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-3">
+                        <div class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: {{ (daily_words|length / 10) * 100 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Upload -->
+<div id="upload-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+    <div class="bg-white p-10 rounded-3xl max-w-lg w-full shadow-2xl">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-800">Enviar Novo Livro</h2>
+            <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+        </div>
+        <form action="{{ url_for('upload_book') }}" method="POST" enctype="multipart/form-data">
+            <div class="border-2 border-dashed border-indigo-200 rounded-2xl p-10 text-center hover:border-indigo-400 transition cursor-pointer mb-8 bg-indigo-50 group" onclick="document.getElementById('file-input').click()">
+                <div class="text-4xl mb-4 group-hover:scale-110 transition">📄</div>
+                <p class="text-gray-600 font-medium">Clique para selecionar ou arraste um PDF</p>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">Apenas arquivos .pdf, at&eacute; 64MB</p>
+                <input type="file" id="file-input" name="file" class="hidden" accept=".pdf" required onchange="updateFileName(this)">
+                <p id="file-name-display" class="mt-4 text-indigo-600 font-bold"></p>
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition shadow-lg transform hover:-translate-y-1">
+                Processar Livro
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function updateFileName(input) {
+    const display = document.getElementById('file-name-display');
+    if (input.files.length > 0) {
+        display.textContent = 'Selecionado: ' + input.files[0].name;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Editar Usuário - Inklingo{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-8">
+    <section class="rounded-3xl bg-white p-8 shadow-sm border border-gray-100">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">Administração</p>
+                <h1 class="mt-2 text-3xl font-bold text-slate-900">Editar usuário</h1>
+                <p class="mt-2 text-sm text-gray-500">Atualize login, e-mail, senha e permissões da conta.</p>
+            </div>
+            <a href="{{ url_for('admin_dashboard') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-50">
+                Voltar ao painel
+            </a>
+        </div>
+    </section>
+
+    <section class="rounded-3xl bg-white p-8 shadow-sm border border-gray-100">
+        <form method="POST" class="space-y-6">
+            <div>
+                <label class="mb-2 block font-semibold text-gray-700">Login</label>
+                <input type="text" name="username" value="{{ managed_user.username }}" class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+            </div>
+            <div>
+                <label class="mb-2 block font-semibold text-gray-700">E-mail</label>
+                <input type="email" name="email" value="{{ managed_user.email }}" class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="mb-2 block font-semibold text-gray-700">Nova senha</label>
+                <input type="password" name="password" class="w-full rounded-lg border border-gray-300 px-4 py-3 transition focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Preencha apenas se quiser trocar a senha">
+            </div>
+            <label class="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+                <input type="checkbox" name="is_admin" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {% if managed_user.is_admin %}checked{% endif %}>
+                <span>
+                    <span class="block font-semibold text-slate-800">Acesso de administrador</span>
+                    <span class="block text-sm text-gray-500">Permite entrar no Painel Admin e gerenciar outros usuários.</span>
+                </span>
+            </label>
+            <div class="flex flex-wrap justify-end gap-3">
+                <a href="{{ url_for('admin_dashboard') }}" class="rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-50">
+                    Cancelar
+                </a>
+                <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700">
+                    Salvar alterações
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

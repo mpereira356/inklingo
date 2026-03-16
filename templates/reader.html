@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} - Reader{% endblock %}
+{% block content %}
+<div class="reader-shell mx-auto flex min-h-[80vh] max-w-7xl flex-col gap-8">
+    <section class="reader-toolbar sticky top-4 z-20 rounded-[2rem] border border-slate-200/80 bg-white/90 px-6 py-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div class="space-y-3 text-center lg:text-left">
+                <a href="{{ url_for('dashboard') }}" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
+                    <span>&larr;</span>
+                    <span>Voltar para a biblioteca</span>
+                </a>
+                <div class="space-y-2">
+                    <p class="text-xs font-bold uppercase tracking-[0.28em] text-slate-400">Modo de leitura do PDF</p>
+                    <h1 class="mx-auto max-w-3xl text-2xl font-semibold leading-tight text-slate-900 lg:mx-0 lg:text-3xl">{{ book.title }}</h1>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center gap-3 lg:items-end">
+                <div class="rounded-full border border-indigo-100 bg-indigo-50 px-5 py-2 text-sm font-semibold text-indigo-700 shadow-sm">
+                    P&aacute;gina {{ page_num }} de {{ total_pages }}
+                </div>
+                <div class="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
+                    {% if page_num > 1 %}
+                        <a href="{{ url_for('reader', book_id=book.id, page=page_num - 1) }}" class="inline-flex min-w-32 items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
+                            P&aacute;gina anterior
+                        </a>
+                    {% endif %}
+                    {% if page_num < total_pages %}
+                        <a href="{{ url_for('reader', book_id=book.id, page=page_num + 1) }}" class="inline-flex min-w-32 items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-lg">
+                            Pr&oacute;xima p&aacute;gina
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="reader-layout grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <div class="reader-stage rounded-[2.5rem] border border-stone-200/70 bg-[linear-gradient(180deg,#fffdf8_0%,#fffaf0_100%)] p-4 shadow-[0_35px_90px_-45px_rgba(15,23,42,0.45)] md:p-6 lg:p-8">
+            <div class="mb-6 text-center">
+                <p class="text-sm font-semibold uppercase tracking-[0.32em] text-stone-400">Visual original do livro</p>
+                <p class="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500">A p&aacute;gina &eacute; exibida com o layout do PDF, incluindo figuras. As palavras clic&aacute;veis ficam mapeadas por cima.</p>
+            </div>
+
+            <div class="reader-page-wrap mx-auto max-w-4xl">
+                <div class="reader-page relative overflow-hidden rounded-[1.75rem] border border-stone-200 bg-white shadow-[0_30px_70px_-45px_rgba(15,23,42,0.6)]" style="aspect-ratio: {{ page_image_width }} / {{ page_image_height }};">
+                    <img src="{{ url_for('reader_page_image', book_id=book.id, page_num=page_num) }}" alt="P&aacute;gina {{ page_num }} do livro {{ book.title }}" class="block h-full w-full object-contain">
+                    <div class="absolute inset-0">
+                        {% for word in page_words %}
+                            <button
+                                type="button"
+                                class="reader-word-hotspot"
+                                data-word="{{ word.clean }}"
+                                aria-label="Abrir palavra {{ word.clean }}"
+                                style="left: {{ word.left_pct }}%; top: {{ word.top_pct }}%; width: {{ word.width_pct }}%; height: {{ word.height_pct }}%;"
+                            ></button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if not page_words %}
+                    <p class="mt-4 text-center text-sm text-slate-500">Esta p&aacute;gina n&atilde;o tem texto selecion&aacute;vel no PDF. A imagem aparece normalmente, mas n&atilde;o h&aacute; palavras clic&aacute;veis aqui.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <aside class="saved-panel xl:sticky xl:top-28">
+            <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_60px_-40px_rgba(15,23,42,0.4)]">
+                <div class="border-b border-slate-100 bg-[linear-gradient(135deg,#eef2ff_0%,#f8fafc_100%)] px-6 py-5">
+                    <p class="text-xs font-bold uppercase tracking-[0.28em] text-indigo-400">Vocabul&aacute;rio salvo</p>
+                    <h2 class="mt-2 text-xl font-semibold text-slate-900">Suas palavras</h2>
+                    <p class="mt-2 text-sm leading-6 text-slate-500">As &uacute;ltimas palavras que voc&ecirc; guardou ficam vis&iacute;veis enquanto l&ecirc;.</p>
+                </div>
+                <div class="px-4 py-4">
+                    <div id="saved-words-empty" class="{% if saved_words %}hidden {% endif %}rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                        Nenhuma palavra salva ainda.
+                    </div>
+                    <div id="saved-words-list" class="space-y-3">
+                        {% for vocab in saved_words %}
+                            <div class="saved-word-item rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3" data-word="{{ vocab.word }}">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="text-base font-semibold text-slate-900">{{ vocab.word }}</p>
+                                        <p class="mt-1 text-sm leading-6 text-slate-500">{{ vocab.translation or 'Tradu&ccedil;&atilde;o pendente' }}</p>
+                                    </div>
+                                    <button type="button" data-word="{{ vocab.word }}" onclick="deleteSavedWord(this.dataset.word, this)" class="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600">
+                                        Remover
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </section>
+
+    <section class="mb-16">
+        <div class="mx-auto flex max-w-4xl flex-col items-center gap-4 rounded-[2rem] border border-slate-200 bg-white px-6 py-5 text-center shadow-[0_18px_50px_-38px_rgba(15,23,42,0.35)] sm:flex-row sm:justify-between sm:text-left">
+            <div>
+                <p class="text-sm font-semibold text-slate-500">Navega&ccedil;&atilde;o</p>
+                <p class="text-base text-slate-800">Use os bot&otilde;es para folhear mantendo a apar&ecirc;ncia original do PDF.</p>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+                {% if page_num > 1 %}
+                    <a href="{{ url_for('reader', book_id=book.id, page=page_num - 1) }}" class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                        &larr; Anterior
+                    </a>
+                {% endif %}
+                {% if page_num < total_pages %}
+                    <a href="{{ url_for('reader', book_id=book.id, page=page_num + 1) }}" class="inline-flex items-center justify-center rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                        Pr&oacute;xima &rarr;
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+
+<div id="word-popup" class="hidden fixed z-50 w-80 -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-gray-100 bg-white p-8 shadow-2xl animate-in fade-in zoom-in duration-200">
+    <div class="mb-6 flex items-start justify-between">
+        <h3 id="popup-word" class="break-words text-3xl font-black text-gray-800">Word</h3>
+        <button onclick="closePopup()" class="text-2xl text-gray-300 hover:text-gray-500">&times;</button>
+    </div>
+
+    <div class="mb-8">
+        <p class="mb-2 text-sm font-bold uppercase tracking-widest text-gray-400">Tradu&ccedil;&atilde;o</p>
+        <p id="popup-translation" class="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-xl font-bold text-indigo-600">Traduzindo...</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3">
+        <button onclick="speakWord()" class="flex items-center justify-center rounded-xl border border-gray-100 bg-gray-50 py-3 font-bold text-gray-700 transition hover:bg-gray-100">
+            <span class="mr-2">🔊</span> Ouvir pron&uacute;ncia
+        </button>
+        <button onclick="testPronunciation()" class="flex items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 py-3 font-bold text-indigo-600 transition hover:bg-indigo-100">
+            <span class="mr-2">🎤</span> Testar pron&uacute;ncia
+        </button>
+        <button id="save-btn" onclick="saveWord()" class="mt-2 flex items-center justify-center rounded-2xl bg-indigo-600 py-4 font-bold text-white shadow-lg transition hover:bg-indigo-700">
+            <span class="mr-2">★</span> Salvar palavra
+        </button>
+    </div>
+
+    <div id="pronunciation-feedback" class="mt-6 hidden rounded-xl p-3 text-center font-bold"></div>
+</div>
+
+<style>
+    .reader-shell {
+        color: #1f2937;
+    }
+
+    .reader-word-hotspot {
+        position: absolute;
+        border: 0;
+        background: rgba(99, 102, 241, 0);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+
+    .reader-word-hotspot:hover,
+    .reader-word-hotspot:focus-visible {
+        background: rgba(99, 102, 241, 0.18);
+        outline: 1px solid rgba(99, 102, 241, 0.28);
+    }
+
+    #word-popup {
+        filter: drop-shadow(0 25px 50px -12px rgba(0, 0, 0, 0.25));
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentWord = '';
+
+document.querySelectorAll('.reader-word-hotspot').forEach(button => {
+    button.addEventListener('click', function(e) {
+        const word = this.getAttribute('data-word');
+        currentWord = word;
+        showPopup(e.clientX, e.clientY, word);
+    });
+});
+
+async function showPopup(x, y, word) {
+    const popup = document.getElementById('word-popup');
+    document.getElementById('popup-word').textContent = word;
+    document.getElementById('popup-translation').textContent = 'Traduzindo...';
+    document.getElementById('pronunciation-feedback').classList.add('hidden');
+
+    popup.style.left = x + 'px';
+    popup.style.top = (y - 120) + 'px';
+    popup.classList.remove('hidden');
+
+    try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${word}&langpair=en|pt`);
+        const data = await response.json();
+        document.getElementById('popup-translation').textContent = data.responseData.translatedText;
+    } catch (err) {
+        document.getElementById('popup-translation').textContent = 'Erro ao traduzir';
+    }
+}
+
+function closePopup() {
+    document.getElementById('word-popup').classList.add('hidden');
+}
+
+function speakWord() {
+    const utterance = new SpeechSynthesisUtterance(currentWord);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+}
+
+function saveWord() {
+    const translation = document.getElementById('popup-translation').textContent;
+    const btn = document.getElementById('save-btn');
+
+    fetch('/api/save_word', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: currentWord, translation: translation })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            prependSavedWord(currentWord, translation);
+            btn.textContent = '✓ Salva!';
+            btn.classList.replace('bg-indigo-600', 'bg-green-600');
+            setTimeout(() => {
+                btn.innerHTML = '<span class="mr-2">★</span> Salvar palavra';
+                btn.classList.replace('bg-green-600', 'bg-indigo-600');
+                closePopup();
+            }, 1500);
+        } else {
+            alert(data.message);
+        }
+    });
+}
+
+function prependSavedWord(word, translation) {
+    const list = document.getElementById('saved-words-list');
+    const emptyState = document.getElementById('saved-words-empty');
+    const normalizedWord = word.trim().toLowerCase();
+    const existingItems = Array.from(list.querySelectorAll('.saved-word-item'));
+
+    const duplicated = existingItems.some(item => {
+        const value = item.getAttribute('data-word');
+        return value && value.toLowerCase() === normalizedWord;
+    });
+
+    if (duplicated) {
+        return;
+    }
+
+    if (emptyState) {
+        emptyState.classList.add('hidden');
+    }
+
+    const wrapper = buildSavedWordItem(word, translation);
+    list.prepend(wrapper);
+
+    if (list.children.length > 20) {
+        list.removeChild(list.lastElementChild);
+    }
+}
+
+function buildSavedWordItem(word, translation) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'saved-word-item rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3';
+    wrapper.setAttribute('data-word', word);
+    wrapper.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <p class="text-base font-semibold text-slate-900">${escapeHtml(word)}</p>
+                <p class="mt-1 text-sm leading-6 text-slate-500">${escapeHtml(translation || 'Tradução pendente')}</p>
+            </div>
+            <button type="button" class="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600">
+                Remover
+            </button>
+        </div>
+    `;
+    wrapper.querySelector('button').addEventListener('click', function() {
+        deleteSavedWord(word, this);
+    });
+    return wrapper;
+}
+
+function deleteSavedWord(word, trigger) {
+    fetch('/api/delete_word', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word: word })
+    })
+    .then(res => res.json().then(data => ({ ok: res.ok, data: data })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) {
+            alert(data.message || 'Não foi possível remover a palavra.');
+            return;
+        }
+
+        const item = trigger.closest('.saved-word-item');
+        if (item) {
+            item.remove();
+        }
+
+        const list = document.getElementById('saved-words-list');
+        const emptyState = document.getElementById('saved-words-empty');
+        if (list.children.length === 0 && emptyState) {
+            emptyState.classList.remove('hidden');
+        }
+    });
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function testPronunciation() {
+    if (!('webkitSpeechRecognition' in window)) {
+        alert('Seu navegador não suporta reconhecimento de voz.');
+        return;
+    }
+
+    const feedback = document.getElementById('pronunciation-feedback');
+    feedback.textContent = 'Ouvindo... Fale agora!';
+    feedback.className = 'mt-6 rounded-xl p-3 text-center font-bold bg-blue-50 text-blue-600';
+    feedback.classList.remove('hidden');
+
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.start();
+
+    recognition.onresult = function(event) {
+        const speechResult = event.results[0][0].transcript.toLowerCase();
+        const targetWord = currentWord.toLowerCase();
+
+        if (speechResult.includes(targetWord)) {
+            feedback.textContent = '✓ Excelente! Pronúncia correta.';
+            feedback.className = 'mt-6 rounded-xl p-3 text-center font-bold bg-green-50 text-green-600';
+        } else {
+            feedback.textContent = `✗ Você disse: "${speechResult}". Tente novamente!`;
+            feedback.className = 'mt-6 rounded-xl p-3 text-center font-bold bg-red-50 text-red-600';
+        }
+    };
+
+    recognition.onerror = function() {
+        feedback.textContent = 'Erro ao reconhecer voz.';
+        feedback.className = 'mt-6 rounded-xl p-3 text-center font-bold bg-red-50 text-red-600';
+    };
+}
+
+document.addEventListener('mousedown', function(e) {
+    const popup = document.getElementById('word-popup');
+    if (!popup.contains(e.target) && !e.target.classList.contains('reader-word-hotspot')) {
+        closePopup();
+    }
+});
+</script>
+{% endblock %}
